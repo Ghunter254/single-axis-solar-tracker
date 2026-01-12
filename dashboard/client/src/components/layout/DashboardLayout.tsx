@@ -3,7 +3,7 @@ import Header from "./Header";
 
 const DashboardLayout = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 p-6">
       {/* 1. Top Navigation */}
       <Header />
 

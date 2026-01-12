@@ -1,10 +1,14 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <thread>
+#include <chrono>
 
 #include "SensorModel.h"
 #include "PIDController.h"
 #include "TrackerCore.h"
+
+#define OUTPUT_JSON true
 
 
 int main () {
@@ -22,24 +26,28 @@ int main () {
   double Kp = 0.1;
   double Ki = 0.01;  
   double Kd = 0.05;
-  double maxSpeed = 15; // Hiki ni degrees per second
+  double maxSpeed = 10; // Hiki ni degrees per second
 
   PIDController pidController(Kp, Ki, Kd, maxSpeed);
   TrackerCore trackerCore;
 
   // Now initial conditions
   double sunAngle = 150.0; // degrees
-  double panelAngle = 120.0; // degrees
+  double panelAngle = 100.0; // degrees
   double deltaTime = 0.1; // seconds ---> time step for simulation
 
+  if (!OUTPUT_JSON) {
   std::cout << "Starting Simulation...\n";
     std::cout << "Target Sun Angle: " << sunAngle << "\n";
     std::cout << "Initial Panel Angle: " << panelAngle << "\n\n";
     std::cout << "Time(s) | Panel Angle | Error (DeltaL) | Motor Speed | P-Action\n";
     std::cout << "-------------------------------------------------------------\n";
+  }
 
-// LOOP (Run for 7 seconds of simulated time) 
-    for (double time = 0; time <= 7.0; time += deltaTime) {
+// LOOP FOR SIMULATION
+    while (true) {
+        static double time = 0.0;
+        
         
         // Measure Error (The Sensors)
         // Note: We swap East-West to get the correct sign direction
@@ -57,14 +65,28 @@ int main () {
         // New Position = Old Position + (Velocity * Time)
         panelAngle += motorSpeed * deltaTime;
         // Output Status
+        if (OUTPUT_JSON) {
+        // Machine-readable format for the Dashboard
+        std::cout << "{"
+              << "\"time\":" << time << ","
+              << "\"angle\":" << panelAngle << ","
+              << "\"sunAngle\":" << sunAngle << ","
+              << "\"deltaL\":" << deltaL << ","
+              << "\"motorSpeed\":" << motorSpeed
+              << "}" << std::endl; 
+        }
+        else {
         std::cout << std::fixed << std::setprecision(2)
                   << std::setw(6) << time << "s | "
                   << std::setw(10) << panelAngle << "° | "
                   << std::setw(13) << deltaL << " | "
                   << std::setw(10) << motorSpeed << " | "
                   << "\n";
-
+          
     }
+      time += deltaTime;
+      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  }
 
   return 0;
 }
