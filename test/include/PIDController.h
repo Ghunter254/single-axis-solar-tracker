@@ -16,9 +16,7 @@ class PIDController {
     public:
         PIDController(double pGain, double iGain, double dGain, double maxOut);
 
-        double compute(double error, double deltaTime);
-
-        void reset(); // We will use to reset the control system.
+        double compute(double desiredAngle, double measuredAngle, double deltaTime);
 };
 
 #endif

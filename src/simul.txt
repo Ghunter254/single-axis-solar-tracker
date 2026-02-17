@@ -1,0 +1,119 @@
+#ifdef ARDUINO_BUILD
+  #include <Arduino.h>
+#else
+  #include <iostream>
+  #include <cmath>
+  #include <iomanip>
+  #include <thread>
+  #include <chrono>
+#endif
+
+#include "SensorModel.h"
+#include "PIDController.h"
+#include "TrackerCore.h"
+#include "Sensor.h"
+
+#define OUTPUT_JSON true
+
+
+  
+  // Creating a SensorModel  object with the following parameters:
+  // Ldr sensitivity: 90 degrees
+  // Potentiometer max angle: 300 degrees
+  // Potentiometer max ADC value: 1023
+  // Sensor offset: 30 degrees
+
+  SensorModel sensorModel(40.0, 300.0, 1023.0, 30.0);
+
+  // Next we now create a PIDController object
+  // with the following gains:
+  double Kp = 0.1;
+  double Ki = 0.01;  
+  double Kd = 0.05;
+  double maxSpeed = 10; // Hiki ni degrees per second
+
+  PIDController pidController(Kp, Ki, Kd, maxSpeed);
+  TrackerCore trackerCore;
+
+  
+  // Now initial conditions
+  double sunAngle = 150.0; // degrees
+  double panelAngle = 100.0; // degrees
+  double deltaTime = 0.1; // seconds ---> time step for simulation
+  double simTime = 0.0;
+
+  void printTelemetry(double t, double angle, double sun, double err, double speed) {
+  #ifdef ARDUINO_BUILD
+    // For arduino
+    if (OUTPUT_JSON) {
+      Serial.print("{\"time\":"); Serial.print(t);
+      Serial.print(",\"angle\":"); Serial.print(angle);
+      Serial.print(",\"sunAngle\":"); Serial.print(sun);
+      Serial.print(",\"deltaL\":"); Serial.print(err);
+      Serial.print(",\"motorSpeed\":"); Serial.print(speed);
+      Serial.println("}");
+    }
+  #else
+  
+    if (OUTPUT_JSON) {
+      std::cout << "{"
+                << "\"time\":" << t << ","
+                << "\"angle\":" << angle << ","
+                << "\"sunAngle\":" << sun << ","
+                << "\"deltaL\":" << err << ","
+                << "\"motorSpeed\":" << speed
+                << "}" << std::endl;
+    } else {
+       std::cout << std::fixed << std::setprecision(2)
+                 << std::setw(6) << t << "s | "
+                 << std::setw(10) << angle << "° | "
+                 << std::setw(13) << err << " | "
+                 << std::setw(10) << speed << " |\n";
+    }
+  #endif
+}
+
+void runSimulationStep() {
+    double deltaL = sensorModel.getDeltaL(sunAngle, panelAngle);
+    double motorSpeed = pidController.compute(0.0, deltaL, deltaTime);
+
+    panelAngle += motorSpeed * deltaTime;
+    printTelemetry(simTime, panelAngle, sunAngle, deltaL, motorSpeed);
+
+    simTime += deltaTime;
+}
+
+
+#ifdef ARDUINO_BUILD
+
+void setup() {
+  Serial.begin(9600); 
+}
+
+void loop() {
+  // runSimulationStep();
+  SensorReadings readings = Sensor::read();
+  Serial.print("Reading East: ");
+  Serial.println(readings.east);
+
+  Serial.print("Reading West: ");
+  Serial.println(readings.west);
+  delay(100); 
+}
+
+#else
+
+int main() {
+  if (!OUTPUT_JSON) {
+      std::cout << "Starting PC Simulation...\n";
+      std::cout << "Target Sun Angle: " << sunAngle << "\n";
+  }
+
+  while (true) {
+    runSimulationStep();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+  }
+  return 0;
+}
+
+#endif

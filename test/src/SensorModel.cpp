@@ -1,6 +1,5 @@
 #include "SensorModel.h"
-#include <cmath>
-
+#include <math.h> 
 
 // Constructor for SensorModel
 SensorModel::SensorModel(double ldrSensitivityDeg, double potMaxAngleDeg, double potMaxADCVal, double sensorOffsetDeg)
@@ -14,7 +13,10 @@ SensorModel::SensorModel(double ldrSensitivityDeg, double potMaxAngleDeg, double
 double SensorModel::getLdrEast(double sunAngle, double panelAngle) {
     double sensorPointingAngle = panelAngle - sensorOffset;
     double relativeAngle = sunAngle - sensorPointingAngle;
-    double L = std::exp(-std::pow(relativeAngle / ldrSensitivity, 2));
+    
+    
+    double L = exp(-pow(relativeAngle / ldrSensitivity, 2)); 
+    
     double L_adc = 1023.0 * L; // Scale to ADC range
     return L_adc;
 }
@@ -22,7 +24,10 @@ double SensorModel::getLdrEast(double sunAngle, double panelAngle) {
 double SensorModel::getLdrWest(double sunAngle, double panelAngle) {
     double sensorPointingAngle = panelAngle + sensorOffset;
     double relativeAngle = sunAngle - sensorPointingAngle;
-    double L = std::exp(-std::pow(relativeAngle / ldrSensitivity, 2));
+    
+    // REMOVED std:: prefix.
+    double L = exp(-pow(relativeAngle / ldrSensitivity, 2));
+    
     double L_adc = 1023.0 * L; // Scale to ADC range
     return L_adc;
 }

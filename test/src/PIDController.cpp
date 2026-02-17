@@ -5,34 +5,19 @@
 PIDController::PIDController(double pGain, double iGain, double dGain, double maxOut)
     : Kp(pGain), Ki(iGain), Kd(dGain), previousError(0.0), integral(0.0), maxOutput(maxOut) {}
 
-double PIDController::compute(double error, double deltaTime) {
+double PIDController::compute(double desiredAngle, double measuredAngle, double deltaTime) {
 
+    double error = desiredAngle - measuredAngle;
 
     // Proportional term
     double Pout = Kp * error;
 
     // Integral term
     integral += error * deltaTime;
-
-    // cap the integral. 50%
-    double maxIntegral = maxOutput * 0.5;
-
-    double Iout = 0;
-
-    if (Ki > 0 ) {
-        double potentialI = Ki * integral;
-
-        if (potentialI > maxIntegral) integral = maxIntegral / Ki;
-        else if (potentialI < -maxIntegral) integral = - maxIntegral/Ki;
-
-        Iout = Ki * maxIntegral;
-    }
+    double Iout = Ki * integral;
 
     // Derivative term
-    double derivative = 0.0;
-
-    if (deltaTime > 0.0 ) derivative = (error - previousError) / deltaTime;
-
+    double derivative = (error - previousError) / deltaTime;
     double Dout = Kd * derivative;
 
     // Total output
@@ -50,9 +35,4 @@ double PIDController::compute(double error, double deltaTime) {
 
     return output;
 
-}
-
-void PIDController::reset() {
-    previousError = 0.0;
-    integral = 0.0;
 }
