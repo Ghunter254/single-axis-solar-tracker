@@ -10,48 +10,111 @@ Motor::Motor() {
         
     pinMode(PIN_MOTOR_IN1, OUTPUT);
     pinMode(PIN_MOTOR_IN2, OUTPUT);
+
+    windowStartTime = millis();
     
     stop();
 
 }
 
-void Motor::drive(int speed) {
+// void Motor::drive(int speed, double potReadings) {
 
+
+//     // Deadband
+//     if (abs(speed) < 5) {
+//         stop();
+//         return;
+//     }
+
+//     if (potReadings > POT_READING_MAX || potReadings < POT_READING_MIN) {
+//       stop();
+//       return;
+//     }
+
+//     // Clamping
+//     if (speed > 100) speed = 100;
+//     if (speed < -100) speed = -100;
+
+//     // Pins
+
+//     if (speed > 5) {
+//     digitalWrite(PIN_MOTOR_IN1, HIGH);
+//     digitalWrite(PIN_MOTOR_IN2, LOW);
+//     delay(speed);
+//     digitalWrite(PIN_MOTOR_IN1, LOW);
+//     digitalWrite(PIN_MOTOR_IN2, LOW);
+//     delay(100 - speed);
+//   } else if (speed < -5) {  // Fixed: check for negative values
+//     digitalWrite(PIN_MOTOR_IN2, HIGH);
+//     digitalWrite(PIN_MOTOR_IN1, LOW);
+//     delay((-1) * speed);  // speed is negative, so this becomes positive
+//     digitalWrite(PIN_MOTOR_IN1, LOW);
+//     digitalWrite(PIN_MOTOR_IN2, LOW);
+//     delay(100 + speed);  // speed is negative, so this subtracts
+//   } else {
+//     digitalWrite(PIN_MOTOR_IN1, LOW);
+//     digitalWrite(PIN_MOTOR_IN2, LOW);
+//   }
+
+
+//     // unsigned long startBurst = millis();
+
+//     // while (millis() - startBurst < 20) {
+//     //     digitalWrite(groundPin, LOW);
+
+//     //     digitalWrite(activePin, HIGH);
+//     //     delayMicroseconds(10 * speed);
+
+//     //     // For pulsing off i guess.
+//     //     digitalWrite(activePin, LOW);
+//     //     delayMicroseconds(1000 - (10 * speed));
+//     // }
+// }
+
+void Motor::drive(int speed, double potReadings) {
 
     // Deadband
-    if (abs(speed) < 20) {
+    if (abs(speed) < 5) {
         stop();
         return;
     }
 
-    // Clamping
+    // Mechanical limits
+    if (potReadings > POT_READING_MAX || potReadings < POT_READING_MIN) {
+        stop();
+        return;
+    }
+
+    // Clamp speed
     if (speed > 100) speed = 100;
     if (speed < -100) speed = -100;
 
-    // Pins
-    int activePin, groundPin;
-    if (speed > 0) {
-        activePin = PIN_MOTOR_IN1; // Right
-        groundPin = PIN_MOTOR_IN2;
-    } else {
-        activePin = PIN_MOTOR_IN2; // Left
-        groundPin = PIN_MOTOR_IN1;
+    unsigned long now = millis();
+
+    if (now - windowStartTime > windowSize) {
+        windowStartTime += windowSize;
     }
 
+    int onTime = abs(speed);  // 0–100 ms within 100ms window
 
-    unsigned long startBurst = millis();
+    bool motorShouldBeOn = (now - windowStartTime) < onTime;
 
-    while (millis() - startBurst < 20) {
-        digitalWrite(groundPin, LOW);
+    if (!motorShouldBeOn) {
+        stop();
+        return;
+    }
 
-        digitalWrite(activePin, HIGH);
-        delayMicroseconds(10 * speed);
-
-        // For pulsing off i guess.
-        digitalWrite(activePin, LOW);
-        delayMicroseconds(1000 - (10 * speed));
+    // Direction control
+    if (speed > 0) {
+        //Serial.write("Motor");
+        digitalWrite(PIN_MOTOR_IN1, HIGH);
+        digitalWrite(PIN_MOTOR_IN2, LOW);
+    } else {
+        digitalWrite(PIN_MOTOR_IN1, LOW);
+        digitalWrite(PIN_MOTOR_IN2, HIGH);
     }
 }
+
 
 
 void Motor::stop() {

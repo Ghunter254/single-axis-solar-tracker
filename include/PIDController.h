@@ -13,6 +13,10 @@ class PIDController {
         double integral; // To accumulate the integral of the error
         double maxOutput; // Maximum output limit
 
+
+        double filteredDerivative;
+        double derivativeAlpha;
+
     public:
         PIDController(double pGain, double iGain, double dGain, double maxOut);
 

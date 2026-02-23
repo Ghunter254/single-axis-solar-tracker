@@ -7,12 +7,16 @@ const SOCKET_URL = "http://localhost:3000";
 export const useTelemetry = () => {
   const [data, setData] = useState<TelemetryData>({
     time: 0,
-    angle: 120, // Start at initial position
-    sunAngle: 0,
+    angle: 120,
     deltaL: 0,
     motorSpeed: 0,
+    east: 0,
+    west: 0,
+    pot: 0,
+    seq: 0,
   });
 
+  const [sessionData, setSessionData] = useState<TelemetryData[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export const useTelemetry = () => {
 
     socket.on("telemetry", (newData: TelemetryData) => {
       setData(newData);
+      setSessionData((prev) => [...prev, newData]);
     });
 
     return () => {
@@ -37,7 +42,5 @@ export const useTelemetry = () => {
     };
   }, []);
 
-  console.log("Telemetry Data:", data);
-
-  return { data, isConnected };
+  return { data, sessionData, isConnected };
 };

@@ -3,69 +3,120 @@ const http = require("http");
 const { Server } = require("socket.io");
 const { SerialPort } = require("serialport");
 const { ReadlineParser } = require("@serialport/parser-readline");
-const { spawn } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const readline = require("readline");
 
-// CONFIG
-const SERIAL_PORT = "COM3";
-const BAUD_RATE = 9600;
-const SIM_EXEC_PATH = "../../.pio/build/native/program.exe";
+// Config
+const SERIAL_PORT = "COM4";
+const BAUD_RATE = 115200;
+
+const LOG_DIR = path.join(__dirname, "sessions");
+if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR);
+
+const sessionFileName = `session_${Date.now()}.jsonl`;
+const sessionPath = path.join(LOG_DIR, sessionFileName);
+const logStream = fs.createWriteStream(sessionPath, { flags: "a" });
+
+console.log("Session log file:", sessionPath);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// --- ARGUMENT PARSER ---
-// Run with: "node server.js --sim" to use C++ simulation
-// Run with: "node server.js" to use Real Arduino
-const USE_SIMULATION = process.argv.includes("--sim");
+// Telemetry state
+let isRunning = false;
+let lastSeq = null;
+let packetCount = 0;
+let droppedPackets = 0;
 
-// This function sends data to the frontend, regardless of where it came from
+// --- Telemetry handler ---
 const broadcastTelemetry = (dataString) => {
+  if (!isRunning) return; // ignore if not running
+
+  const trimmed = dataString.trim();
+  if (!trimmed) return;
+
   try {
-    const jsonData = JSON.parse(dataString);
-    io.emit("telemetry", jsonData);
-    console.log("Data:", jsonData);
+    const jsonData = JSON.parse(trimmed);
+
+    // Sequence check
+    if (jsonData.seq !== undefined) {
+      if (lastSeq !== null && jsonData.seq !== lastSeq + 1) {
+        droppedPackets += jsonData.seq - lastSeq - 1;
+        console.warn("⚠ Sequence jump:", lastSeq, "→", jsonData.seq);
+      }
+      lastSeq = jsonData.seq;
+    }
+
+    packetCount++;
+    logStream.write(trimmed + "\n");
+    const mapped = {
+      time: jsonData.t,
+      angle: jsonData.angle,
+      sunAngle: 0,
+      deltaL: jsonData.error,
+      motorSpeed: jsonData.output,
+      east: jsonData.east,
+      west: jsonData.west,
+      pot: jsonData.pot,
+      seq: jsonData.seq,
+    };
+
+    io.emit("telemetry", mapped);
+
+    if (packetCount % 100 === 0) {
+      console.log(
+        `Packets logged: ${packetCount} | Dropped: ${droppedPackets}`,
+      );
+    }
   } catch (e) {
-    console.log("Raw:", dataString); // Debug non-JSON lines
+    console.log("Non-JSON line:", trimmed);
   }
 };
 
-if (USE_SIMULATION) {
-  console.log("STARTING C++ SIMULATION MODE...");
+// --- Serial Port ---
+const port = new SerialPort({ path: SERIAL_PORT, baudRate: BAUD_RATE });
+const parser = port.pipe(new ReadlineParser({ delimiter: "\n" }));
 
-  // Spawn the C++ executable
-  const simulation = spawn(SIM_EXEC_PATH);
+parser.on("data", broadcastTelemetry);
 
-  simulation.stdout.on("data", (data) => {
-    // Data might come in chunks, split by newline
-    const lines = data.toString().split("\n");
-    lines.forEach((line) => {
-      if (line.trim()) broadcastTelemetry(line);
-    });
-  });
+port.on("error", (err) => {
+  console.error("Serial Error:", err.message);
+});
 
-  simulation.stderr.on("data", (data) => {
-    console.error(`C++ Error: ${data}`);
-  });
+// --- CLI for commands ---
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
+rl.on("line", (input) => {
+  input = input.trim().toLowerCase();
+  if (input === "run") {
+    isRunning = true;
+    port.write("run\n");
+    console.log("✅ Logging started, command RUN sent");
+  } else if (input === "stop") {
+    isRunning = false;
+    port.write("stop\n");
+    console.log("⏹ Logging stopped, command STOP sent");
+  } else {
+    console.log("Only 'run' or 'stop' commands accepted");
+  }
+});
 
-  simulation.on("close", (code) => {
-    console.log(`Simulation ended with code ${code}`);
-  });
-} else {
-  console.log(`STARTING SERIAL MODE on ${SERIAL_PORT}...`);
+// --- Graceful shutdown ---
+process.on("SIGINT", () => {
+  console.log("\nShutting down...");
+  console.log(`Packets logged: ${packetCount}`);
+  console.log(`Dropped packets: ${droppedPackets}`);
+  logStream.end();
+  port.write("stop\n"); // ensure Arduino stops
+  process.exit();
+});
 
-  // Serial Port Logic (Existing)
-  const port = new SerialPort({ path: SERIAL_PORT, baudRate: BAUD_RATE });
-  const parser = port.pipe(new ReadlineParser({ delimiter: "\r\n" }));
-
-  parser.on("data", broadcastTelemetry);
-
-  port.on("error", (err) => {
-    console.error("Serial Error:", err.message);
-    console.log('Hint: connect hardware or run "node server.js --sim"');
-  });
-}
-
+// --- Server ---
 server.listen(3000, () => {
   console.log("Gateway running on http://localhost:3000");
+  console.log("Type 'run' to start logging, 'stop' to pause");
 });
