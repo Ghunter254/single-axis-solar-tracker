@@ -61,7 +61,7 @@ void loop() {
     double error = readings.east - readings.west;
     double normalizedError = 0.0;
 
-    const double LIGHT_THRESHOLD = 200.0; // only track when total light is above this
+    const double LIGHT_THRESHOLD = 100.0; // only track when total light is above this
 
     double output = 0;
 
@@ -110,6 +110,7 @@ void loop() {
     }
 
     telemetry.send(
+      trackerCore.isScanning(),
       potDegree,
       readings.pot,
       readings.east,

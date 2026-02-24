@@ -53,6 +53,7 @@ const broadcastTelemetry = (dataString) => {
     logStream.write(trimmed + "\n");
     const mapped = {
       time: jsonData.t,
+      scan: jsonData.scanFinished,
       angle: jsonData.angle,
       sunAngle: 0,
       deltaL: jsonData.error,

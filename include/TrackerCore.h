@@ -19,6 +19,7 @@ class TrackerCore {
         bool _isScanning;
         int _scanPhase;
         double _baseAngle;
+        double _targetAngle;
         
         int _lightBase;
         int _lightRight;
@@ -27,7 +28,7 @@ class TrackerCore {
         int _bestDirection;
         
         const double SCAN_OFFSET = 15.0;
-        const int SCAN_SPEED = 120;      
+        const int SCAN_SPEED = 100;      
         
         
         const double MAX_SAFE_ANGLE = 290.0; 

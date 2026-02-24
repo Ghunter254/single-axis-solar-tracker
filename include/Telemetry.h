@@ -19,7 +19,8 @@ class Telemetry {
 
         void setTelemetryRate(float telemetryRateHz);
 
-        void send(        
+        void send(  
+        bool scanFinished,      
         float angle,
         float pot,
         float east,

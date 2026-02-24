@@ -20,6 +20,7 @@ void Telemetry::setTelemetryRate(float telemetryRateHz){
 }
 
 void Telemetry::send(
+    bool scanFinished,
     float angle,
     float pot,
     float east,
@@ -43,6 +44,7 @@ void Telemetry::send(
     Serial.print("{");
     Serial.print("\"seq\":"); Serial.print(seq); Serial.print(",");
     Serial.print("\"t\":"); Serial.print(now); Serial.print(",");
+    Serial.print("\"Scanning\":"); Serial.print(scanFinished); Serial.print(",");
     Serial.print("\"angle\":"); Serial.print(angle, 4); Serial.print(",");
     Serial.print("\"pot\":"); Serial.print(pot, 4); Serial.print(",");
     Serial.print("\"east\":"); Serial.print(east, 4); Serial.print(",");

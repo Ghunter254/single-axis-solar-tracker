@@ -1,9 +1,8 @@
 #include "Motor.h"
 #include "HardwareDefs.h" 
 
-#ifdef ARDUINO_BUILD
-  #include <Arduino.h>
-#endif
+#include <Arduino.h>
+
 
 // CONSTRUCTOR
 Motor::Motor() {
@@ -19,57 +18,15 @@ Motor::Motor() {
 
 // void Motor::drive(int speed, double potReadings) {
 
-
-//     // Deadband
-//     if (abs(speed) < 5) {
-//         stop();
-//         return;
+//     if (speed > 0) {
+//         digitalWrite(PIN_MOTOR_IN1, HIGH);
+//         digitalWrite(PIN_MOTOR_IN2, LOW);
+//     } else {
+//         digitalWrite(PIN_MOTOR_IN1, LOW);
+//         digitalWrite(PIN_MOTOR_IN2, HIGH);
 //     }
-
-//     if (potReadings > POT_READING_MAX || potReadings < POT_READING_MIN) {
-//       stop();
-//       return;
-//     }
-
-//     // Clamping
-//     if (speed > 100) speed = 100;
-//     if (speed < -100) speed = -100;
-
-//     // Pins
-
-//     if (speed > 5) {
-//     digitalWrite(PIN_MOTOR_IN1, HIGH);
-//     digitalWrite(PIN_MOTOR_IN2, LOW);
-//     delay(speed);
-//     digitalWrite(PIN_MOTOR_IN1, LOW);
-//     digitalWrite(PIN_MOTOR_IN2, LOW);
-//     delay(100 - speed);
-//   } else if (speed < -5) {  // Fixed: check for negative values
-//     digitalWrite(PIN_MOTOR_IN2, HIGH);
-//     digitalWrite(PIN_MOTOR_IN1, LOW);
-//     delay((-1) * speed);  // speed is negative, so this becomes positive
-//     digitalWrite(PIN_MOTOR_IN1, LOW);
-//     digitalWrite(PIN_MOTOR_IN2, LOW);
-//     delay(100 + speed);  // speed is negative, so this subtracts
-//   } else {
-//     digitalWrite(PIN_MOTOR_IN1, LOW);
-//     digitalWrite(PIN_MOTOR_IN2, LOW);
-//   }
-
-
-//     // unsigned long startBurst = millis();
-
-//     // while (millis() - startBurst < 20) {
-//     //     digitalWrite(groundPin, LOW);
-
-//     //     digitalWrite(activePin, HIGH);
-//     //     delayMicroseconds(10 * speed);
-
-//     //     // For pulsing off i guess.
-//     //     digitalWrite(activePin, LOW);
-//     //     delayMicroseconds(1000 - (10 * speed));
-//     // }
 // }
+
 
 void Motor::drive(int speed, double potReadings) {
 

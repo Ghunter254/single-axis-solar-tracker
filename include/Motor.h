@@ -5,7 +5,7 @@ class Motor {
 
 private:
      unsigned long windowStartTime;
-     const unsigned long windowSize = 100;
+     const unsigned long windowSize = 2000;
 public:
     // Set up the motor pins and all that
     Motor();
